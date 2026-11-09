@@ -1,0 +1,46 @@
+# Entorno común del TFM (tarea T3 de la iteración I0).
+# Crear:      conda env create -p <ruta>/TFM -f environment.yml
+#             conda activate <ruta>/TFM
+#             pip install -e ".[dev]"
+#             python -m ipykernel install --user --name TFM --display-name "Python (TFM)"
+# Comprobar:  pytest -q
+#
+# Versiones fijadas: las que afectan a los resultados (partición, modelos, lectura de LIDC-IDRI).
+# Sin fijar: herramientas que no cambian resultados.
+# En Colab no se reinstala PyTorch (ver requirements-colab.txt).
+name: TFM
+channels: [conda-forge]
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    # Datos y lectura de LIDC-IDRI
+    - numpy==2.2.6
+    - pandas==2.3.3
+    - scipy==1.15.3
+    - pylidc==0.2.3
+    - sqlalchemy==2.0.57
+    - scikit-image==0.25.2
+    - pydicom==3.0.2
+    # Modelos tabulares M0–M2 y partición (la partición versionada se generó con 1.7.2)
+    - scikit-learn==1.7.2
+    - joblib==1.6.0
+    # Modelos de imagen M3–M7 (Apple Silicon: GPU por MPS)
+    - torch==2.15.0
+    - torchvision==0.29.2
+    # Configuración, contratos de datos y figuras
+    - pyyaml==6.0.3
+    - pydantic
+    - matplotlib==3.10.9
+    - seaborn==0.13.2
+    - krippendorff
+    - openpyxl==3.1.5
+    # Desarrollo
+    - jupyterlab
+    - ipykernel
+    - pytest
+    - ruff
+    - nbstripout
+    # Explicabilidad y atributos (descomentar al llegar a esas fases):
+    # - grad-cam
+    # - shap

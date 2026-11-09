@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tfm-lidc"
+version = "0.0.1"
+description = "Clasificación de malignidad de nódulos de LIDC-IDRI con evaluación cuantitativa de su explicabilidad"
+requires-python = ">=3.10"
+dependencies = ["numpy", "pandas", "scikit-learn", "scipy", "pyyaml", "joblib", "pylidc==0.2.3"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = ["datos: necesita la descarga de LIDC-IDRI o su caché (se omite en la integración continua)"]

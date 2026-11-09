@@ -1,0 +1,13 @@
+# M0 · Línea base trivial (Tabla 21): regresión logística con el diámetro del nódulo.
+# Referencia mínima que debe superar el modelo de imagen (H1).
+hereda: ../base.yaml
+
+modelo:
+  id: M0
+  nombre: m0_diametro
+  familia: tabular
+  variables: [diametro_mm]
+  estimador: logistica
+  parametros:
+    C: 1000000.0             # sin regularización efectiva: una sola variable
+    max_iter: 1000

@@ -1,0 +1,15 @@
+# Datos e imágenes: nunca en el repositorio (RF-E03)
+*.dcm
+*.npz
+*.npy
+*.h5
+datos_*/
+resultados/
+# Configuración local de cada integrante
+configs/local.yaml
+# Python
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store

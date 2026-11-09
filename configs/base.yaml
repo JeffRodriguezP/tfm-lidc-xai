@@ -1,0 +1,23 @@
+# Configuración común a todos los modelos (M0–M7).
+# Las configuraciones de cada modelo heredan de este archivo y solo declaran lo que cambia.
+
+datos:
+  # Ruta a la carpeta lidc_idri de la descarga de TCIA. Si se deja vacía, se usa la de ~/.pylidcrc.
+  # Cada integrante puede sobrescribirla en configs/local.yaml (excluido del repositorio).
+  dicom_root: ""
+  min_lectores: 3            # R1: nódulos con al menos 3 lecturas
+  regla: R1                  # R1 (mediana), R2 (media), R3 (media, sin exclusión)
+  agregacion_diametro: mediana   # diámetro del nódulo = mediana de los diámetros de sus lectores
+
+particion:
+  semilla: 42
+  n_pliegues: 5              # validación cruzada externa agrupada por paciente (Tabla 19)
+  frac_validacion: 0.20      # 20 % de cada pliegue de entrenamiento ≈ 16 % de los nódulos
+  dir: particiones           # versionada en el repositorio: se genera UNA vez y la usan todos
+
+evaluacion:
+  n_bootstrap: 2000          # remuestreo de pacientes para los IC 95 %
+  umbral: youden             # umbral elegido en la validación interna de cada pliegue
+
+salidas:
+  dir_resultados: resultados  # excluido del repositorio (.gitignore)
