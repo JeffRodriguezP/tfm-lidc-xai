@@ -1,0 +1,9 @@
+#!/bin/sh
+# Rechaza los envíos directos a main: los cambios entran por rama + solicitud de cambio.
+while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "✗ No se sube directamente a main. Crea una rama (git switch -c feat/...) y abre una solicitud de cambio."
+    exit 1
+  fi
+done
+exit 0
