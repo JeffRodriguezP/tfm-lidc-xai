@@ -62,7 +62,15 @@ cd tfm-lidc-xai
 git log --oneline
 ```
 
-Debe aparecer el commit `7d00914 feat(models): línea base M0 …` (o uno posterior).
+Deben aparecer los commits del proyecto, empezando por el más reciente (por ejemplo, `Merge pull request #1 …`).
+
+Activa después el freno que impide subir cambios directamente a `main` (una sola vez por clon):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+A partir de ahí, un `git push` dirigido a `main` se rechaza con un aviso: los cambios se suben siempre desde una rama y se integran con una solicitud de cambio (ver «Reglas del repositorio» al final).
 
 ## 5. Crear el entorno del TFM
 
@@ -173,11 +181,20 @@ Si las cifras coinciden, el entorno común queda validado en las tres máquinas 
 | `ModuleNotFoundError: tfm_lidc` | El entorno no está activo (`conda activate TFM`) o faltó `pip install -e ".[dev]"` |
 | El kernel «Python (TFM)» no aparece en JupyterLab | Repite el comando `ipykernel install` del punto 6 y recarga la página |
 | Cifras de M0 distintas | Comprueba `sklearn` = 1.7.2 y que no has modificado `particiones/` (`git status` no debe listarla) |
+| `✗ No se sube directamente a main` al hacer `git push` | Es el hook funcionando: crea una rama (`git switch -c feat/...`), haz el push de esa rama y abre una solicitud de cambio |
 | JupyterLab no deja subir a otras carpetas | Solo muestra la carpeta desde la que se lanzó; ciérralo (Ctrl+C dos veces) y lánzalo desde una carpeta superior |
 
 ## Reglas del repositorio (resumen)
 
-- **Nunca** se trabaja directamente sobre `main`: cada tarea en su rama (`feat/<parte>-<RF>-<descripcion>`) y se integra con una solicitud de cambio revisada por otra integrante.
+- **Nunca** se trabaja directamente sobre `main`: cada tarea en su rama (`feat/<parte>-<RF>-<descripcion>`) y se integra con una solicitud de cambio revisada por otra integrante. El hook de `.githooks/pre-push` (punto 4) bloquea los envíos directos a `main`.
+
+  ```bash
+  git switch main && git pull                  # partir siempre de main actualizado
+  git switch -c feat/datos-RF-D08-particion    # una rama por tarea
+  # … cambios, git add, git commit …
+  git push -u origin feat/datos-RF-D08-particion
+  gh pr create --fill                          # solicitud de cambio; la revisa otra integrante
+  ```
 - **Nunca** se suben imágenes, recortes ni la carpeta `resultados/` (el `.gitignore` ya lo impide).
 - La partición de `particiones/` **no se regenera**: todos los modelos se evalúan sobre ella.
 - Mensajes de commit con el formato `tipo(módulo): descripción [RF-xx]`.
