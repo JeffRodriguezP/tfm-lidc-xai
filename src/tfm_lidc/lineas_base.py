@@ -54,7 +54,7 @@ def predecir_fuera_de_pliegue(d: pd.DataFrame, cfg_modelo: dict, semilla: int, n
 
     Con `rng_permutacion`, las etiquetas de entrenamiento y validación se permutan en cada pliegue
     (control negativo de la Tabla 19); las de prueba no se tocan."""
-    X, y = d[cfg_modelo["variables"]], d.etiqueta.values
+    X, y = d[tabular.columnas(cfg_modelo)], d.etiqueta.values
     p, pred, umbrales, coefs = np.full(len(d), np.nan), np.full(len(d), -1), [], []
     for k in range(n_pliegues):
         rol = d[f"rol_{k}"].values
@@ -67,7 +67,8 @@ def predecir_fuera_de_pliegue(d: pd.DataFrame, cfg_modelo: dict, semilla: int, n
         umbrales.append(round(float(u), 4))
         clf = modelo.named_steps["clf"]
         if hasattr(clf, "coef_"):
-            coefs.append(dict(zip(cfg_modelo["variables"], np.round(clf.coef_[0], 4).tolist()),
+            nombres = modelo[:-1].get_feature_names_out()          # incluye las categorías codificadas
+            coefs.append(dict(zip(nombres, np.round(clf.coef_[0], 4).tolist()),
                               intercepto=round(float(clf.intercept_[0]), 4)))
     assert not np.isnan(p).any(), "Hay nódulos sin predicción fuera de muestra"
     return dict(probabilidad=p, prediccion=pred, umbrales=umbrales, coeficientes=coefs)
@@ -86,7 +87,11 @@ def ejecutar(ruta_cfg: str, n_control: int = 0) -> dict:
     nod = dn.construir_o_cargar(cfg, datos_dir)
     part = dp.generar_o_cargar(nod, cfg, raiz)
     d = part.merge(nod, on=["nodule_id", "patient_id"], validate="one_to_one")
-    X, y = d[m["variables"]], d.etiqueta.values
+    cols = tabular.columnas(m)
+    faltan = [c for c in cols if c not in d or d[c].isna().any()]
+    if faltan:
+        raise ValueError(f"Faltan valores en {faltan}. Si es 'fabricante', indica datos.metadata_csv en configs/local.yaml")
+    y = d.etiqueta.values
 
     oof = predecir_fuera_de_pliegue(d, m, cp["semilla"], cp["n_pliegues"])
     p_oof, pred_oof, umbrales, coefs = oof["probabilidad"], oof["prediccion"], oof["umbrales"], oof["coeficientes"]
@@ -96,9 +101,9 @@ def ejecutar(ruta_cfg: str, n_control: int = 0) -> dict:
     if n_control:
         control = controles.control_negativo(
             lambda rng: predecir_fuera_de_pliegue(d, m, cp["semilla"], cp["n_pliegues"], rng_permutacion=rng)["probabilidad"],
-            y, n_permutaciones=n_control, semilla=cp["semilla"])
+            y, n_permutaciones=n_control, semilla=cp["semilla"], auc_observado=float(roc_auc_score(y, p_oof)))
         control["nota"] = ("Con una sola variable el modelo solo puede aprender el signo: el AUC con etiquetas "
-                           "permutadas oscila entre valores altos y bajos y la prueba es poco informativa.") if len(m["variables"]) == 1 else ""
+                           "permutadas oscila entre valores altos y bajos y la prueba es poco informativa.") if len(cols) == 1 else ""
 
     met = metricas.con_intervalos(y, p_oof, pred_oof, d.patient_id.values, cfg["evaluacion"]["n_bootstrap"], cp["semilla"])
     commit = _commit()
@@ -137,6 +142,7 @@ def main() -> None:
         c = r["control_negativo"]
         print(f"Control negativo ({c['n_permutaciones']} permutaciones): AUC media {c['auc_media']:.3f} "
               f"[{c['auc_p2_5']:.3f}, {c['auc_p97_5']:.3f}] · {'superado' if c['superado'] else 'NO superado: revisar fuga'}")
+        print(f"P-valor por permutación del AUC observado: {c['p_valor']:.4f}")
     print(f"Resultados en {r['carpeta_resultados']}")
 
 

@@ -109,3 +109,50 @@ def test_control_negativo_detecta_una_fuga_simulada():
     y = d.etiqueta.values
     c = controles.control_negativo(lambda rng: y + rng.normal(0, 0.1, len(y)), y, n_permutaciones=20)
     assert not c["superado"]
+
+
+# --- 5 · preprocesado con variables categóricas (M1) ---------------------------------------------------
+M_CAT = dict(variables=dict(numericas=["x1", "x2"], categoricas=["equipo"]), estimador="logistica",
+             parametros=dict(max_iter=1000))
+
+
+def _datos_cat(semilla=0):
+    _, d = _datos(semilla=semilla)
+    rng = np.random.default_rng(semilla)
+    d["equipo"] = rng.choice(["A", "B", "C"], len(d))
+    return d
+
+
+def test_codificacion_solo_con_entrenamiento_y_categorias_nuevas():
+    d = _datos_cat()
+    rol = d["rol_0"].values.copy()
+    te = rol == "prueba"
+    d.loc[te, "equipo"] = "Z"                    # categoría que solo existe en la prueba
+    modelo, _, p = ajustar_pliegue(M_CAT, 0, d[["x1", "x2", "equipo"]], d.etiqueta.values, rol)
+    cats = modelo.named_steps["preprocesado"].named_transformers_["cat"].categories_[0].tolist()
+    assert "Z" not in cats and set(cats) <= {"A", "B", "C"}
+    assert np.isfinite(p).all()                  # la categoría desconocida no rompe la predicción
+
+
+def test_categoricas_no_dependen_de_las_etiquetas_de_prueba():
+    d = _datos_cat(1)
+    X, y, rol = d[["x1", "x2", "equipo"]], d.etiqueta.values, d["rol_0"].values
+    _, u1, p1 = ajustar_pliegue(M_CAT, 0, X, y, rol)
+    y2 = y.copy()
+    y2[rol == "prueba"] = 1 - y2[rol == "prueba"]
+    _, u2, p2 = ajustar_pliegue(M_CAT, 0, X, y2, rol)
+    assert u1 == u2 and np.array_equal(p1, p2)
+
+
+def test_p_valor_de_permutacion():
+    rng = np.random.default_rng(0)
+    y = rng.integers(0, 2, 200)
+    senal = y + rng.normal(0, .5, 200)
+    from sklearn.metrics import roc_auc_score
+    c = controles.control_negativo(lambda r: r.permutation(senal), y, n_permutaciones=200, semilla=1,
+                                   auc_observado=roc_auc_score(y, senal))
+    assert c["p_valor"] < 0.01
+    ruido = rng.normal(size=200)
+    c2 = controles.control_negativo(lambda r: r.permutation(ruido), y, n_permutaciones=200, semilla=1,
+                                    auc_observado=roc_auc_score(y, ruido))
+    assert c2["p_valor"] > 0.01

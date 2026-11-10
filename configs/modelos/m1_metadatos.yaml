@@ -1,0 +1,17 @@
+# M1 · Detector de atajos y de confusión (Tabla 21): regresión logística con los metadatos de adquisición.
+# Variante «solo metadatos» (sin diámetro): responde a si la etiqueta puede predecirse a partir de cómo se
+# adquirió la TC y no de cómo es el nódulo (DeGrave et al., 2021; Geirhos et al., 2020).
+# Un AUC próximo a 0,5 descarta el atajo; un AUC claramente mayor obliga a controlarlo en M3–M7.
+hereda: ../base.yaml
+
+modelo:
+  id: M1
+  nombre: m1_metadatos
+  familia: tabular
+  variables:
+    numericas: [grosor_mm, px_mm, espaciado_z_mm, contraste]
+    categoricas: [fabricante]
+  estimador: logistica
+  parametros:
+    C: 1.0               # regularización L2 por defecto: variables correlacionadas y categorías poco frecuentes
+    max_iter: 2000

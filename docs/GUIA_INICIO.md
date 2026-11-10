@@ -1,8 +1,8 @@
-# Guía de inicio: de la invitación a reproducir M0
+# Guía de inicio: de la invitación a reproducir M0 y M1
 
-**Objetivo:** tener el repositorio y el entorno del TFM en tu ordenador y comprobar que obtienes exactamente los mismos resultados de la línea base M0.
+**Objetivo:** tener el repositorio y el entorno del TFM en tu ordenador y comprobar que obtienes exactamente los mismos resultados de las líneas base M0 y M1.
 **Tiempo estimado:** 30–40 minutos (la mayor parte es la instalación del entorno).
-**No necesitas las imágenes DICOM:** M0 usa solo la base de anotaciones que viene con pylidc.
+**No necesitas las imágenes DICOM:** M0 usa solo la base de anotaciones que viene con pylidc, y M1 añade el `metadata.csv` de tu descarga de LIDC-IDRI.
 
 > En **Mac** los comandos se escriben en la app **Terminal**. En **Windows**, en **Anaconda Prompt** (menú Inicio). Copia cada bloque y ejecútalo en orden.
 
@@ -104,7 +104,7 @@ Debe imprimir **`ok 1.7.2`**. Si sale otra versión de scikit-learn, avisa: la p
 pytest -q
 ```
 
-Resultado esperado: **`12 passed, 4 skipped`**. Las 4 omitidas son las pruebas sobre los datos reales, que se activan cuando M0 haya construido su caché.
+Resultado esperado: **`15 passed, 5 skipped`**. Las 5 omitidas son las pruebas sobre los datos reales, que se activan cuando M0 haya construido su caché y cuando se configure el `metadata.csv` (punto 10).
 
 ## 8. Ejecutar M0
 
@@ -138,9 +138,52 @@ Los resultados quedan en `resultados/m0_diametro__R1__s42__<commit>/` (`registro
 pytest -q
 ```
 
-Resultado esperado: **`16 passed`**. Ahora se ejecutan también las comprobaciones de no fuga sobre la partición real.
+Resultado esperado: **`19 passed, 1 skipped`**. Ahora se ejecutan también las comprobaciones de no fuga sobre la partición real. La que sigue omitida necesita el `metadata.csv` del punto 10.
 
-## 10. Ver el notebook de resultados
+## 10. Ejecutar M1 (metadatos de adquisición)
+
+M1 comprueba si la etiqueta puede predecirse solo con cómo se adquirió la TC (fabricante, grosor, espaciados, contraste). El fabricante sale del `metadata.csv` de **tu descarga de LIDC-IDRI**, así que hay que indicar su ruta.
+
+Crea el archivo `configs/local.yaml` (no se sube al repositorio: cada una pone su ruta) con este contenido, cambiando la ruta por la tuya:
+
+```yaml
+datos:
+  metadata_csv: /ruta/a/TCIA_LIDC-IDRI_20200921/metadata/metadata.csv
+```
+
+En Windows la ruta se escribe con barras normales o entre comillas, por ejemplo `metadata_csv: "C:/Users/<usuario>/TFM/TCIA_LIDC-IDRI_20200921/metadata/metadata.csv"`.
+
+Después:
+
+```bash
+python -m tfm_lidc.lineas_base --config configs/modelos/m1_metadatos.yaml --control-negativo 1000
+```
+
+Tarda alrededor de un minuto (las 1.000 permutaciones dan el p-valor). Resultado que debes obtener (exacto):
+
+```
+M1 · R1 · 879 nódulos de 535 pacientes
+  auc            0.543  IC95 [0.496, 0.587]
+  auprc          0.514  IC95 [0.465, 0.576]
+  brier          0.252  IC95 [0.245, 0.260]
+  exactitud      0.515  IC95 [0.474, 0.557]
+  sensibilidad   0.565  IC95 [0.501, 0.627]
+  especificidad  0.468  IC95 [0.402, 0.535]
+AUC de prueba por pliegue: [0.5266, 0.607, 0.5933, 0.5323, 0.5272]
+Umbrales por pliegue: [0.3862, 0.452, 0.6096, 0.4511, 0.4604]
+Control negativo (1000 permutaciones): AUC media 0.490 [0.436, 0.542] · superado
+P-valor por permutación del AUC observado: 0.0260
+```
+
+Por último, las pruebas completas:
+
+```bash
+pytest -q
+```
+
+Resultado esperado: **`20 passed`**.
+
+## 11. Ver el notebook de resultados
 
 ```bash
 cd ..
@@ -151,7 +194,7 @@ jupyter lab
 2. Arriba a la derecha elige el kernel **Python (TFM)**.
 3. Menú **Kernel → Restart Kernel and Run All Cells**.
 
-Verás las métricas, la tabla por pliegue, las curvas ROC y de calibración, la curva de M0 frente al diámetro y el análisis de errores.
+Verás, para M0, las métricas, la tabla por pliegue, las curvas ROC y de calibración, la curva frente al diámetro y el análisis de errores; y en la parte 2, M1: comparación con M0, coeficientes por pliegue, asociación de cada metadato con la etiqueta, estratificación por tamaño y la prueba de permutación.
 
 Ejecutar el notebook lo modifica. Para no generar cambios accidentales, al terminar deja el archivo como estaba:
 
@@ -160,13 +203,13 @@ cd tfm-lidc-xai
 git restore notebooks/03_lineas_base_M0_M2.ipynb
 ```
 
-## 11. Cuéntanos el resultado
+## 12. Cuéntanos el resultado
 
 Escribe en el grupo:
 
 - sistema operativo y procesador (p. ej., «Windows 11, Intel» o «macOS, Apple M2»);
-- la salida del punto 8 (o una captura);
-- el resultado de `pytest -q` del punto 9.
+- la salida de los puntos 8 (M0) y 10 (M1), o capturas;
+- el resultado del último `pytest -q` del punto 10.
 
 Si las cifras coinciden, el entorno común queda validado en las tres máquinas (tarea T3 de I0).
 
@@ -178,6 +221,7 @@ Si las cifras coinciden, el entorno común queda validado en las tres máquinas 
 |---|---|
 | `repository not found` al clonar | No se aceptó la invitación (punto 1) o `gh auth login` se hizo con otra cuenta (`gh auth status` para comprobarlo) |
 | `conda env create` falla en un paquete | Copia el mensaje de error al grupo; no cambies versiones por tu cuenta |
+| `Faltan valores en ['fabricante']` o `No existe datos.metadata_csv` al ejecutar M1 | Falta `configs/local.yaml` o la ruta al `metadata.csv` es incorrecta (punto 10) |
 | `ModuleNotFoundError: tfm_lidc` | El entorno no está activo (`conda activate TFM`) o faltó `pip install -e ".[dev]"` |
 | El kernel «Python (TFM)» no aparece en JupyterLab | Repite el comando `ipykernel install` del punto 6 y recarga la página |
 | Cifras de M0 distintas | Comprueba `sklearn` = 1.7.2 y que no has modificado `particiones/` (`git status` no debe listarla) |

@@ -5,6 +5,9 @@ datos:
   # Ruta a la carpeta lidc_idri de la descarga de TCIA. Si se deja vacía, se usa la de ~/.pylidcrc.
   # Cada integrante puede sobrescribirla en configs/local.yaml (excluido del repositorio).
   dicom_root: ""
+  # Ruta al metadata.csv de la descarga de TCIA (TCIA_LIDC-IDRI_20200921/metadata/metadata.csv).
+  # Solo la necesita M1 (fabricante). Cada integrante la indica en configs/local.yaml.
+  metadata_csv: ""
   min_lectores: 3            # R1: nódulos con al menos 3 lecturas
   regla: R1                  # R1 (mediana), R2 (media), R3 (media, sin exclusión)
   agregacion_diametro: mediana   # diámetro del nódulo = mediana de los diámetros de sus lectores

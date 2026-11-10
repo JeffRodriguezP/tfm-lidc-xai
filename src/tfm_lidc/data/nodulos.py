@@ -68,6 +68,38 @@ def agrupar(dicom_root: str = "") -> pd.DataFrame:
     return pd.DataFrame(filas)
 
 
+FABRICANTES = {"GE": "GE", "SIEMENS": "Siemens", "PHILIPS": "Philips", "TOSHIBA": "Toshiba"}
+
+
+def metadatos_exploraciones(metadata_csv: str = "", dicom_root: str = "") -> pd.DataFrame:
+    """Metadatos de adquisición por exploración (M1).
+
+    De pylidc: grosor de corte, espaciado en el plano, espaciado entre cortes y uso de contraste.
+    Del metadata.csv de la descarga de TCIA (si se indica): fabricante del equipo.
+    """
+    _configurar_pylidc(dicom_root)
+    import pylidc as pl
+
+    exp = pd.DataFrame([dict(scan_id=s.id, series_uid=s.series_instance_uid, grosor_mm=float(s.slice_thickness),
+                             px_mm=float(s.pixel_spacing), espaciado_z_mm=float(s.slice_spacing),
+                             contraste=int(bool(s.contrast_used)))
+                        for s in pl.query(pl.Scan).all()])
+    if metadata_csv:
+        meta = pd.read_csv(metadata_csv, usecols=["SeriesInstanceUID", "Modality", "Manufacturer"])
+        meta = meta[meta.Modality == "CT"].drop_duplicates("SeriesInstanceUID")
+
+        def normalizar(f):
+            f = str(f).upper()
+            return next((v for k, v in FABRICANTES.items() if k in f), "Otro")
+
+        meta["fabricante"] = meta.Manufacturer.map(normalizar)
+        exp = exp.merge(meta[["SeriesInstanceUID", "fabricante"]].rename(columns={"SeriesInstanceUID": "series_uid"}),
+                        on="series_uid", how="left")
+    else:
+        exp["fabricante"] = np.nan
+    return exp.drop(columns="series_uid")
+
+
 def tabla_nodulos(lecturas: pd.DataFrame, asignacion: pd.DataFrame, agregacion_diametro: str = "mediana",
                   min_lectores: int = 3) -> pd.DataFrame:
     """Agrega las lecturas por nódulo y calcula las etiquetas R1, R2 y R3."""
@@ -104,4 +136,16 @@ def construir_o_cargar(cfg: dict, cache_dir: Path) -> pd.DataFrame:
     else:
         print("Agrupando lecturas en nódulos (solo la primera vez, ~1–2 min)…")
         asig = agrupar(root); asig.to_csv(f_asig, index=False)
-    return tabla_nodulos(lect, asig, cfg["datos"]["agregacion_diametro"], cfg["datos"]["min_lectores"])
+    nod = tabla_nodulos(lect, asig, cfg["datos"]["agregacion_diametro"], cfg["datos"]["min_lectores"])
+
+    # Metadatos de adquisición por exploración (M1); el fabricante requiere datos.metadata_csv
+    meta_csv = cfg["datos"].get("metadata_csv", "")
+    f_exp = cache_dir / ("exploraciones_v0.csv" if meta_csv else "exploraciones_v0_sin_fabricante.csv")
+    if f_exp.exists():
+        exp = pd.read_csv(f_exp)
+    else:
+        if meta_csv and not Path(meta_csv).exists():
+            raise FileNotFoundError(f"No existe datos.metadata_csv = {meta_csv}. Revisa configs/local.yaml")
+        exp = metadatos_exploraciones(meta_csv, root)
+        exp.to_csv(f_exp, index=False)
+    return nod.merge(exp, on="scan_id", how="left", validate="many_to_one")

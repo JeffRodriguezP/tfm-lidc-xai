@@ -57,3 +57,15 @@ def test_m0_no_lee_la_prueba(d):
     y2[rol == "prueba"] = 1 - y2[rol == "prueba"]
     _, u2, p2 = ajustar_pliegue(m, 42, X, y2, rol)
     assert u1 == u2 and np.array_equal(p1, p2)
+
+
+CFG_M1 = config.cargar(RAIZ / "configs/modelos/m1_metadatos.yaml")
+
+
+@pytest.mark.skipif(not CFG_M1["datos"].get("metadata_csv"), reason="sin datos.metadata_csv en configs/local.yaml")
+def test_metadatos_completos_para_m1():
+    nod = dn.construir_o_cargar(CFG_M1, CACHE)
+    d = nod.dropna(subset=["etiqueta_r1"])
+    cols = ["grosor_mm", "px_mm", "espaciado_z_mm", "contraste", "fabricante"]
+    assert not d[cols].isna().any().any(), "Hay nódulos de R1 sin metadatos de adquisición"
+    assert set(d.fabricante) <= {"GE", "Siemens", "Philips", "Toshiba"}

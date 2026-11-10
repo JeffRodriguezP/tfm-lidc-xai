@@ -48,3 +48,18 @@ La primera ejecución crea `particiones/particion_R1_s42_k5.csv` y su `.json` (h
 Las pruebas se validaron introduciendo a propósito dos fugas (umbral elegido con la prueba; escalado ajustado con todos los datos): ambas hacen fallar la batería.
 
 `evaluation/controles.control_negativo` recibe una función que entrena con etiquetas permutadas y predice fuera de pliegue, así que los modelos de imagen (M3–M7) lo usarán sin cambios. En M0 es poco informativo: con una sola variable el modelo solo aprende el signo.
+
+## M1 · Metadatos de adquisición
+
+Detector de atajos (Tabla 21), variante solo metadatos: grosor de corte, espaciado en el plano, espaciado entre cortes, contraste y fabricante. Necesita la ruta al `metadata.csv` de TCIA en `configs/local.yaml`:
+
+```yaml
+datos:
+  metadata_csv: /ruta/a/TCIA_LIDC-IDRI_20200921/metadata/metadata.csv
+```
+
+```bash
+python -m tfm_lidc.lineas_base --config configs/modelos/m1_metadatos.yaml --control-negativo 1000
+```
+
+Las 1.000 permutaciones dan, además del control negativo, el **p-valor** del AUC observado: la prueba formal de si la adquisición predice la etiqueta mejor que el azar. El análisis completo (coeficientes por pliegue, asociación univariante, estratificación por tamaño) está en la parte 2 del notebook `03_lineas_base_M0_M2.ipynb`.
