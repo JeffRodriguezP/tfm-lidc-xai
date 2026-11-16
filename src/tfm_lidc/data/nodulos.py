@@ -5,6 +5,9 @@ Etiquetas:
   R1 · ≥ min_lectores lecturas; mediana de malignidad < 3 → 0, > 3 → 1, = 3 → excluido.
   R2 · ≥ min_lectores lecturas; media < 3 → 0, > 3 → 1, = 3 → excluido.
   R3 · cualquier número de lecturas; media ≤ 3 → 0, > 3 → 1.
+Un nódulo no puede tener más de 4 lecturas (hay 4 lectores): un clúster con más indica un fallo de agrupación
+(varias lesiones fusionadas). Esos clústeres se marcan en `cluster_anomalo` y, por defecto, quedan sin etiqueta
+en R1, R2 y R3 (Tabla 16, paso 3; RF-D02). `datos.excluir_clusteres_mas_de_4: false` los conserva (análisis de sensibilidad).
 """
 from __future__ import annotations
 
@@ -19,6 +22,8 @@ import pandas as pd
 for _n, _t in (("int", int), ("float", float), ("bool", bool)):
     if not hasattr(np, _n):
         setattr(np, _n, _t)
+
+MAX_LECTORES = 4   # radiólogos de LIDC-IDRI: ningún nódulo puede tener más lecturas
 
 ATRIBUTOS = ["subtlety", "internalStructure", "calcification", "sphericity", "margin",
              "lobulation", "spiculation", "texture"]
@@ -101,8 +106,12 @@ def metadatos_exploraciones(metadata_csv: str = "", dicom_root: str = "") -> pd.
 
 
 def tabla_nodulos(lecturas: pd.DataFrame, asignacion: pd.DataFrame, agregacion_diametro: str = "mediana",
-                  min_lectores: int = 3) -> pd.DataFrame:
-    """Agrega las lecturas por nódulo y calcula las etiquetas R1, R2 y R3."""
+                  min_lectores: int = 3, excluir_clusteres_mas_de_4: bool = True) -> pd.DataFrame:
+    """Agrega las lecturas por nódulo y calcula las etiquetas R1, R2 y R3.
+
+    Con `excluir_clusteres_mas_de_4` los clústeres de más de 4 lecturas (fallo de agrupación) se marcan en
+    `cluster_anomalo` y no reciben etiqueta, por lo que quedan fuera de la partición y de los modelos.
+    """
     d = lecturas.merge(asignacion, on="ann_id", validate="one_to_one")
     agg_d = "median" if agregacion_diametro == "mediana" else "mean"
     g = d.groupby("nodule_id")
@@ -118,6 +127,9 @@ def tabla_nodulos(lecturas: pd.DataFrame, asignacion: pd.DataFrame, agregacion_d
     nod["etiqueta_r1"] = np.where(al & (nod.malignidad_mediana < 3), 0.0, np.where(al & (nod.malignidad_mediana > 3), 1.0, np.nan))
     nod["etiqueta_r2"] = np.where(al & (nod.malignidad_media < 3), 0.0, np.where(al & (nod.malignidad_media > 3), 1.0, np.nan))
     nod["etiqueta_r3"] = (nod.malignidad_media > 3).astype(float)
+    nod["cluster_anomalo"] = nod.n_lectores > MAX_LECTORES
+    if excluir_clusteres_mas_de_4:
+        nod.loc[nod.cluster_anomalo, ["etiqueta_r1", "etiqueta_r2", "etiqueta_r3"]] = np.nan
     return nod
 
 
@@ -136,7 +148,8 @@ def construir_o_cargar(cfg: dict, cache_dir: Path) -> pd.DataFrame:
     else:
         print("Agrupando lecturas en nódulos (solo la primera vez, ~1–2 min)…")
         asig = agrupar(root); asig.to_csv(f_asig, index=False)
-    nod = tabla_nodulos(lect, asig, cfg["datos"]["agregacion_diametro"], cfg["datos"]["min_lectores"])
+    nod = tabla_nodulos(lect, asig, cfg["datos"]["agregacion_diametro"], cfg["datos"]["min_lectores"],
+                        cfg["datos"].get("excluir_clusteres_mas_de_4", True))
 
     # Metadatos de adquisición por exploración (M1); el fabricante requiere datos.metadata_csv
     meta_csv = cfg["datos"].get("metadata_csv", "")

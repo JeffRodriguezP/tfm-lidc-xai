@@ -63,7 +63,8 @@ def generar_o_cargar(nodulos: pd.DataFrame, cfg: dict, raiz_repo: Path) -> pd.Da
 
     regla, cp = cfg["datos"]["regla"], cfg["particion"]
     carpeta = raiz_repo / cfg["particion"].get("dir", "particiones")
-    f = carpeta / f"particion_{regla}_s{cp['semilla']}_k{cp['n_pliegues']}.csv"
+    sufijo = "" if cfg["datos"].get("excluir_clusteres_mas_de_4", True) else "_sin-exclusion"   # análisis de sensibilidad
+    f = carpeta / f"particion_{regla}_s{cp['semilla']}_k{cp['n_pliegues']}{sufijo}.csv"
     if f.exists():
         p = pd.read_csv(f)
         comprobar(p, cp["n_pliegues"])

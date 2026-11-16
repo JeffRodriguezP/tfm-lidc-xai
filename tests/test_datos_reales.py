@@ -32,7 +32,12 @@ def d():
 
 
 def test_cifras_de_la_regla_r1(d):
-    assert len(d) == 879 and d.patient_id.nunique() == 535 and int(d.etiqueta.sum()) == 430
+    # 879 nódulos / 535 pacientes / 430 de alta sospecha antes de excluir los 14 clústeres con más de 4 lecturas
+    assert len(d) == 869 and d.patient_id.nunique() == 530 and int(d.etiqueta.sum()) == 421
+
+
+def test_ningun_cluster_con_mas_de_4_lecturas(d):
+    assert d.n_lectores.max() <= 4 and not d.cluster_anomalo.any()
 
 
 def test_ningun_paciente_en_dos_papeles(d):

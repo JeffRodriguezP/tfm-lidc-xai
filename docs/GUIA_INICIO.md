@@ -117,18 +117,20 @@ La primera vez tarda **2–3 minutos** (lee las 6.859 anotaciones de pylidc y ag
 ### Resultado que debes obtener (exacto)
 
 ```
-M0 · R1 · 879 nódulos de 535 pacientes
-  auc            0.937  IC95 [0.920, 0.953]
-  auprc          0.931  IC95 [0.908, 0.952]
-  brier          0.100  IC95 [0.087, 0.115]
-  exactitud      0.862  IC95 [0.839, 0.885]
-  sensibilidad   0.835  IC95 [0.798, 0.870]
-  especificidad  0.889  IC95 [0.857, 0.919]
-AUC de prueba por pliegue: [0.9336, 0.9197, 0.9264, 0.9244, 0.969]
-Umbrales por pliegue: [0.6528, 0.4571, 0.3184, 0.3601, 0.6265]
+M0 · R1 · 869 nódulos de 530 pacientes
+  auc            0.936  IC95 [0.917, 0.952]
+  auprc          0.926  IC95 [0.899, 0.950]
+  brier          0.101  IC95 [0.087, 0.117]
+  exactitud      0.853  IC95 [0.826, 0.877]
+  sensibilidad   0.822  IC95 [0.776, 0.862]
+  especificidad  0.882  IC95 [0.850, 0.911]
+AUC de prueba por pliegue: [0.9483, 0.9455, 0.9337, 0.9046, 0.9519]
+Umbrales por pliegue: [0.5573, 0.5241, 0.5159, 0.2681, 0.4369]
 ```
 
-Lo importante es que coincidan también **el AUC y el umbral de cada pliegue**: eso confirma que usas la misma partición (`particiones/particion_R1_s42_k5.csv`) y el mismo entorno.
+> **Cambio de partición (14/11/2026).** Desde esta versión se excluyen los 14 clústeres con más de 4 lecturas (un nódulo no puede tener más lecturas que lectores; Tabla 16 paso 3, RF-D02): R1 pasa de 879 a **869 nódulos (530 pacientes)** y la partición versionada cambia (huella `0e6393241e7c69e0`). La partición anterior se conserva como `particion_R1_s42_k5_sin-exclusion.csv` para el análisis de sensibilidad: `python -m tfm_lidc.lineas_base --config configs/modelos/m0_diametro_sin_exclusion.yaml` reproduce los resultados antiguos (879 nódulos, AUC 0,937 [0,920–0,953]).
+
+Lo importante es que coincidan también **el AUC y el umbral de cada pliegue**: eso confirma que usas la misma partición (`particiones/particion_R1_s42_k5.csv`, huella `0e6393241e7c69e0`) y el mismo entorno.
 
 Los resultados quedan en `resultados/m0_diametro__R1__s42__<commit>/` (`registro.json` y `predicciones_oof.csv`). Esa carpeta no se sube al repositorio.
 
@@ -162,17 +164,17 @@ python -m tfm_lidc.lineas_base --config configs/modelos/m1_metadatos.yaml --cont
 Tarda alrededor de un minuto (las 1.000 permutaciones dan el p-valor). Resultado que debes obtener (exacto):
 
 ```
-M1 · R1 · 879 nódulos de 535 pacientes
-  auc            0.543  IC95 [0.496, 0.587]
-  auprc          0.514  IC95 [0.465, 0.576]
-  brier          0.252  IC95 [0.245, 0.260]
-  exactitud      0.515  IC95 [0.474, 0.557]
-  sensibilidad   0.565  IC95 [0.501, 0.627]
-  especificidad  0.468  IC95 [0.402, 0.535]
-AUC de prueba por pliegue: [0.5266, 0.607, 0.5933, 0.5323, 0.5272]
-Umbrales por pliegue: [0.3862, 0.452, 0.6096, 0.4511, 0.4604]
-Control negativo (1000 permutaciones): AUC media 0.490 [0.436, 0.542] · superado
-P-valor por permutación del AUC observado: 0.0260
+M1 · R1 · 869 nódulos de 530 pacientes
+  auc            0.541  IC95 [0.496, 0.588]
+  auprc          0.514  IC95 [0.463, 0.578]
+  brier          0.252  IC95 [0.244, 0.258]
+  exactitud      0.533  IC95 [0.491, 0.576]
+  sensibilidad   0.601  IC95 [0.541, 0.662]
+  especificidad  0.469  IC95 [0.402, 0.539]
+AUC de prueba por pliegue: [0.5649, 0.4879, 0.6053, 0.5395, 0.5439]
+Umbrales por pliegue: [0.3796, 0.3745, 0.4961, 0.4817, 0.5421]
+Control negativo (1000 permutaciones): AUC media 0.491 [0.437, 0.550] · superado
+P-valor por permutación del AUC observado: 0.0470
 ```
 
 Por último, las pruebas completas:

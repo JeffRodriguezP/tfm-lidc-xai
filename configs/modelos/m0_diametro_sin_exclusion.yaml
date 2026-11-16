@@ -1,0 +1,9 @@
+# M0 · análisis de sensibilidad: igual que M0 pero conservando los 14 clústeres con más de 4 lecturas
+# (R1 → 879 nódulos / 535 pacientes en lugar de 869 / 530). Usa la partición particion_R1_s42_k5_sin-exclusion.csv.
+hereda: m0_diametro.yaml
+
+datos:
+  excluir_clusteres_mas_de_4: false
+
+modelo:
+  nombre: m0_diametro_sin_exclusion
