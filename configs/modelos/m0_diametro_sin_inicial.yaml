@@ -1,0 +1,9 @@
+# M0 · análisis de sensibilidad: mismas condiciones que M0 pero sin los nódulos del lanzamiento inicial de LIDC
+# (R1 → 584 nódulos / 339 pacientes). Usa la MISMA partición (huella base 0e6393241e7c69e0) sin los 285 nódulos del bloque.
+hereda: m0_diametro.yaml
+
+datos:
+  excluir_publicacion_inicial: true
+
+modelo:
+  nombre: m0_diametro_sin_inicial

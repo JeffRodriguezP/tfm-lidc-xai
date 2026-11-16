@@ -73,3 +73,15 @@ def test_clusteres_con_mas_de_4_lecturas_quedan_sin_etiqueta():
     assert con.loc["n2", ["etiqueta_r1", "etiqueta_r2", "etiqueta_r3"]].isna().all()
     sin = tabla_nodulos(lect, asig, excluir_clusteres_mas_de_4=False).set_index("nodule_id")
     assert sin.loc["n2", "etiqueta_r1"] == 0.0                     # mediana de [1, 1, 1, 1, 5] = 1
+
+
+def test_sin_publicacion_inicial_conserva_pliegues_y_no_hay_fuga():
+    n = _nodulos_sinteticos()
+    n["publicacion_inicial"] = n.patient_id.str[1:].astype(int) % 3 == 0   # un tercio de los pacientes
+    p = dp.generar(n, "etiqueta_r1", n_pliegues=5, semilla=1)
+    q = dp.sin_publicacion_inicial(p, n)
+    quitados = set(n.loc[n.publicacion_inicial, "nodule_id"])
+    assert set(q.nodule_id) == set(p.nodule_id) - quitados
+    m = q.merge(p, on="nodule_id", suffixes=("", "_base"))
+    assert (m.pliegue == m.pliegue_base).all()                      # mismo pliegue que en la partición común
+    assert all((m[f"rol_{k}"] == m[f"rol_{k}_base"]).all() for k in range(5))
