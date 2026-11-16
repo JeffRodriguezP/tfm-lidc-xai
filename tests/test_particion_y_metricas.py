@@ -58,3 +58,30 @@ def test_bootstrap_contiene_valor_puntual():
     p = np.clip(y * 0.6 + rng.normal(0.2, 0.2, 300), 0, 1)
     r = metricas.con_intervalos(y, p, (p > .5).astype(int), np.repeat(np.arange(100), 3), n_boot=300)
     assert r["auc"]["ic95"][0] <= r["auc"]["valor"] <= r["auc"]["ic95"][1]
+
+
+def test_clusteres_con_mas_de_4_lecturas_quedan_sin_etiqueta():
+    """Un nódulo no puede tener más lecturas que lectores (4): se marca y se excluye de R1, R2 y R3."""
+    lect = pd.DataFrame(dict(ann_id=range(9), scan_id=1, patient_id="P", series_uid="s", malignancy=[5, 5, 5, 1, 1, 1, 1, 1, 5],
+                             diametro_mm=10.0, volumen_mm3=100.0, publicacion_inicial=False,
+                             **{c: 3 for c in ["subtlety", "internalStructure", "calcification", "sphericity", "margin",
+                                               "lobulation", "spiculation", "texture"]}))
+    asig = pd.DataFrame(dict(ann_id=range(9), nodule_id=["n1"] * 4 + ["n2"] * 5))   # n1: 4 lecturas; n2: 5 (anómalo)
+    con = tabla_nodulos(lect, asig).set_index("nodule_id")
+    assert list(con.cluster_anomalo) == [False, True]
+    assert con.loc["n1", "etiqueta_r1"] == 1.0                     # mediana de [5, 5, 5, 1] = 5
+    assert con.loc["n2", ["etiqueta_r1", "etiqueta_r2", "etiqueta_r3"]].isna().all()
+    sin = tabla_nodulos(lect, asig, excluir_clusteres_mas_de_4=False).set_index("nodule_id")
+    assert sin.loc["n2", "etiqueta_r1"] == 0.0                     # mediana de [1, 1, 1, 1, 5] = 1
+
+
+def test_sin_publicacion_inicial_conserva_pliegues_y_no_hay_fuga():
+    n = _nodulos_sinteticos()
+    n["publicacion_inicial"] = n.patient_id.str[1:].astype(int) % 3 == 0   # un tercio de los pacientes
+    p = dp.generar(n, "etiqueta_r1", n_pliegues=5, semilla=1)
+    q = dp.sin_publicacion_inicial(p, n)
+    quitados = set(n.loc[n.publicacion_inicial, "nodule_id"])
+    assert set(q.nodule_id) == set(p.nodule_id) - quitados
+    m = q.merge(p, on="nodule_id", suffixes=("", "_base"))
+    assert (m.pliegue == m.pliegue_base).all()                      # mismo pliegue que en la partición común
+    assert all((m[f"rol_{k}"] == m[f"rol_{k}_base"]).all() for k in range(5))

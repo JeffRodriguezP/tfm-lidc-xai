@@ -49,7 +49,18 @@ def huella(p: pd.DataFrame) -> str:
     return hashlib.sha256(p.sort_values("nodule_id").to_csv(index=False).encode()).hexdigest()[:16]
 
 
-def generar_o_cargar(nodulos: pd.DataFrame, cfg: dict, raiz_repo: Path) -> pd.DataFrame:
+def sin_publicacion_inicial(p: pd.DataFrame, nodulos: pd.DataFrame) -> pd.DataFrame:
+    """Análisis de sensibilidad común a todos los modelos: quita de la partición los nódulos de las exploraciones del
+    lanzamiento inicial de LIDC (escalas de espiculación y lobulación posiblemente inconsistentes). No se genera una
+    partición nueva: cada paciente conserva su pliegue y su rol, de modo que los resultados con y sin ese bloque se
+    comparan sobre los mismos pliegues y no puede haber fuga."""
+    inicial = set(nodulos.loc[nodulos.publicacion_inicial.astype(bool), "nodule_id"])
+    q = p[~p.nodule_id.isin(inicial)].reset_index(drop=True)
+    comprobar(q, sum(c.startswith("rol_") for c in q.columns))
+    return q
+
+
+def _generar_o_cargar_base(nodulos: pd.DataFrame, cfg: dict, raiz_repo: Path) -> pd.DataFrame:
     """Carga la partición versionada en `particiones/`; si no existe, la genera y pide subirla al repositorio.
 
     La partición NO debe regenerarse en cada máquina: con la misma semilla, StratifiedGroupKFold reparte
@@ -63,7 +74,8 @@ def generar_o_cargar(nodulos: pd.DataFrame, cfg: dict, raiz_repo: Path) -> pd.Da
 
     regla, cp = cfg["datos"]["regla"], cfg["particion"]
     carpeta = raiz_repo / cfg["particion"].get("dir", "particiones")
-    f = carpeta / f"particion_{regla}_s{cp['semilla']}_k{cp['n_pliegues']}.csv"
+    sufijo = "" if cfg["datos"].get("excluir_clusteres_mas_de_4", True) else "_sin-exclusion"   # análisis de sensibilidad
+    f = carpeta / f"particion_{regla}_s{cp['semilla']}_k{cp['n_pliegues']}{sufijo}.csv"
     if f.exists():
         p = pd.read_csv(f)
         comprobar(p, cp["n_pliegues"])
@@ -78,4 +90,13 @@ def generar_o_cargar(nodulos: pd.DataFrame, cfg: dict, raiz_repo: Path) -> pd.Da
         nodulos=int(len(p)), pacientes=int(p.patient_id.nunique()), sklearn=sklearn.__version__,
         generada=time.strftime("%Y-%m-%d %H:%M")), indent=1))
     print(f"⚠ Partición nueva en {f}: súbela al repositorio para que todos los modelos y máquinas usen la misma.")
+    return p
+
+
+def generar_o_cargar(nodulos: pd.DataFrame, cfg: dict, raiz_repo: Path) -> pd.DataFrame:
+    """Partición común a todos los modelos. Con `datos.excluir_publicacion_inicial: true` devuelve esa misma
+    partición sin los nódulos del lanzamiento inicial (análisis de sensibilidad, mismos pliegues)."""
+    p = _generar_o_cargar_base(nodulos, cfg, raiz_repo)
+    if cfg["datos"].get("excluir_publicacion_inicial", False):
+        p = sin_publicacion_inicial(p, nodulos)
     return p

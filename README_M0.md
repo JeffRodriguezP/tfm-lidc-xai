@@ -43,7 +43,7 @@ La primera ejecución crea `particiones/particion_R1_s42_k5.csv` y su `.json` (h
 | Prueba | Qué comprueba | Datos |
 |---|---|---|
 | `test_fugas.py` | Ningún paciente en dos papeles ni en dos pliegues; pacientes con varias TC enteros en un pliegue; umbral, modelo y escalado idénticos si se cambian las etiquetas o las variables de la prueba; control negativo ≈ 0,5 y detección de una fuga simulada | Sintéticos (integración continua) |
-| `test_datos_reales.py` | Lo mismo sobre la partición versionada y la tabla de nódulos real (879 nódulos, 535 pacientes, 430 de alta sospecha) | LIDC-IDRI (`pytest -m datos`) |
+| `test_datos_reales.py` | Lo mismo sobre la partición versionada y la tabla de nódulos real (869 nódulos, 530 pacientes, 421 de alta sospecha) | LIDC-IDRI (`pytest -m datos`) |
 
 Las pruebas se validaron introduciendo a propósito dos fugas (umbral elegido con la prueba; escalado ajustado con todos los datos): ambas hacen fallar la batería.
 
