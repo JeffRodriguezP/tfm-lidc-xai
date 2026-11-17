@@ -12,6 +12,8 @@ datos:
   regla: R1                  # R1 (mediana), R2 (media), R3 (media, sin exclusión)
   excluir_clusteres_mas_de_4: true   # Tabla 16 paso 3 / RF-D02: un nódulo no puede tener > 4 lecturas (14 clústeres; R1: 879 → 869)
   excluir_publicacion_inicial: false   # true = análisis de sensibilidad sin las 403 exploraciones del lanzamiento inicial (R1: 869 → 584 nódulos, 530 → 339 pacientes); misma partición
+  nivel_consenso: 0.5        # máscara de consenso: un píxel cuenta si lo incluye ≥ 50 % de los lectores del nódulo (3.3.5.6)
+  area_minima_corte_mm2: 2.5 # un corte cuenta (política S2) si la máscara de consenso ocupa ≥ 2,5 mm² (Tabla 16 paso 6; decisión provisional)
   agregacion_diametro: mediana   # diámetro del nódulo = mediana de los diámetros de sus lectores
 
 particion:
