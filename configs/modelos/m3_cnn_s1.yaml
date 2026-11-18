@@ -1,0 +1,8 @@
+# M3 · variante S1: solo el corte de mayor área de consenso de cada nódulo (política habitual en la literatura 2D).
+# Factor de sensibilidad (3.3.5.6); con un corte por nódulo, la agregación no cambia nada.
+hereda: m3_cnn.yaml
+
+modelo:
+  nombre: m3_cnn_s1
+  entrada:
+    politica: S1

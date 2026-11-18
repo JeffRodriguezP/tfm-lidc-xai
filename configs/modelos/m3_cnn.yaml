@@ -1,0 +1,32 @@
+# M3 · CNN compacta entrenada desde cero (Tabla 21): establece si el preentrenamiento de M4/M5 aporta algo.
+# Entrada: recorte 2D de 128 × 128 (64 mm a 0,5 mm/px) de cada corte con máscara de consenso (política S2).
+# Unidad de evaluación: el nódulo (media de las probabilidades de sus cortes, RF-M05).
+# Ejecutar:  python -m tfm_lidc.imagen --config configs/modelos/m3_cnn.yaml
+hereda: ../base.yaml
+
+modelo:
+  id: M3
+  nombre: m3_cnn
+  familia: imagen
+  arquitectura: cnn_compacta
+  entrada:
+    politica: S2              # S1 = corte de mayor área; S2 = todos los cortes de consenso; S3 = 2,5D (k−1, k, k+1)
+  parametros:
+    anchos: [32, 64, 128, 256]   # 4 bloques de 2 convoluciones 3×3; última capa convolucional de 16 × 16
+    abandono: 0.3
+  entrenamiento:
+    semillas: [42, 43, 44]    # RF-M02: cinco pliegues y tres semillas
+    epocas: 60                # máximo; parada temprana por AUC de nódulo en validación
+    paciencia: 12
+    tam_lote: 64
+    tasa_aprendizaje: 0.001   # AdamW con planificación coseno
+    decaimiento_pesos: 0.0001
+    ponderar_por_cortes: true # cada corte pesa 1 / nº de cortes de su nódulo (RF-M02)
+    ponderar_clase: true      # cada clase pesa lo mismo (contando nódulos del entrenamiento)
+    normalizar: true          # media y desviación típica solo del entrenamiento de cada pliegue
+    agregacion: media         # media (principal); se informan también máximo y media recortada
+  aumento:                    # solo en el entrenamiento (3.3.5.10); rangos fijados de antemano
+    giros: true
+    rotacion_grados: 15
+    desplazamiento_px: 8      # 4 mm
+    intensidad: 0.1

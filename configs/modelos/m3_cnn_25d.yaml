@@ -1,0 +1,7 @@
+# M3 · variante 2,5D (política S3): los cortes k−1, k y k+1 como 3 canales (3.3.5.6). Factor de sensibilidad.
+hereda: m3_cnn.yaml
+
+modelo:
+  nombre: m3_cnn_25d
+  entrada:
+    politica: S3

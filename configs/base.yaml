@@ -16,6 +16,12 @@ datos:
   area_minima_corte_mm2: 2.5 # un corte cuenta (política S2) si la máscara de consenso ocupa ≥ 2,5 mm² (Tabla 16 paso 6; decisión provisional)
   agregacion_diametro: mediana   # diámetro del nódulo = mediana de los diámetros de sus lectores
 
+recortes:                    # modelos de imagen M3–M7 (3.3.5.7, RF-D06); src/tfm_lidc/data/recortes.py
+  fov_mm: 64                 # campo de visión físico, centrado en el centroide de la máscara de consenso
+  mm_por_pixel: 0.5          # espaciado tras remuestrear: 64 / 0,5 = 128 × 128 px (decisión A6 abierta: 224 px → 0,2857)
+  ventana_hu: [-1000, 400]   # ventana fija → [0, 1]; no depende de los datos
+  n_procesos: 4              # exploraciones procesadas en paralelo al extraer
+
 particion:
   semilla: 42
   n_pliegues: 5              # validación cruzada externa agrupada por paciente (Tabla 19)
