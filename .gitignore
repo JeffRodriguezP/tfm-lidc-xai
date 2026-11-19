@@ -13,3 +13,11 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 .DS_Store
+
+Claude outputs/
+Untitled*.ipynb
+.ipynb_checkpoints/
+
+Claude outputs/
+Untitled*.ipynb
+.ipynb_checkpoints/
