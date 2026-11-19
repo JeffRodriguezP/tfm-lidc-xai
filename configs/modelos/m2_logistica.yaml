@@ -1,0 +1,17 @@
+# M2 · regresión logística con el vector de ocho atributos (Tabla 21): cota de lo que las ocho valoraciones del radiólogo explican por sí solas (escenario A). No es un modelo de imagen.
+# Entradas: seis atributos ordinales (mediana entre lectores, estandarizados) y dos nominales (moda entre lectores, one-hot);
+# la malignidad NUNCA es entrada. Estandarización, imputación (con indicador) y categorías se ajustan solo con el entrenamiento de cada pliegue.
+hereda: ../base.yaml
+
+modelo:
+  id: M2
+  nombre: m2_logistica
+  familia: tabular
+  imputar: true
+  variables:
+    numericas: [subtlety_mediana, sphericity_mediana, margin_mediana, lobulation_mediana, spiculation_mediana, texture_mediana]
+    categoricas: [internalStructure_moda, calcification_moda]
+  estimador: logistica
+  parametros:
+    C: 1.0
+    max_iter: 2000

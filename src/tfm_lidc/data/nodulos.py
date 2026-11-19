@@ -30,6 +30,15 @@ ATRIBUTOS = ["subtlety", "internalStructure", "calcification", "sphericity", "ma
 COLUMNAS_LECTURA = ["ann_id", "scan_id", "patient_id", "series_uid", *ATRIBUTOS, "malignancy",
                     "diametro_mm", "volumen_mm3", "publicacion_inicial"]
 
+NOMINALES = ["internalStructure", "calcification"]
+
+
+def _moda(x: pd.Series) -> float:
+    """Categoría más frecuente entre los lectores del nódulo. Con empate devuelve NaN: el modelo lo imputa con la
+    moda del conjunto de entrenamiento (apartado 3.3.5.5), así que el desempate nunca usa datos de prueba."""
+    c = x.value_counts()
+    return float(c.index[0]) if (len(c) == 1 or c.iloc[0] > c.iloc[1]) else float("nan")
+
 
 def _configurar_pylidc(dicom_root: str) -> None:
     """Escribe ~/.pylidcrc solo si se indica una ruta (pylidc únicamente la usa para leer DICOM)."""
@@ -121,6 +130,7 @@ def tabla_nodulos(lecturas: pd.DataFrame, asignacion: pd.DataFrame, agregacion_d
         "malignidad_mediana": g.malignancy.median(), "malignidad_media": g.malignancy.mean(),
         "diametro_mm": g.diametro_mm.agg(agg_d), "volumen_mm3": g.volumen_mm3.agg(agg_d),
         **{f"{c}_mediana": g[c].median() for c in ATRIBUTOS},
+        **{f"{c}_moda": g[c].agg(_moda) for c in NOMINALES},
         "publicacion_inicial": g.publicacion_inicial.first(),
     }).reset_index()
     al = nod.n_lectores >= min_lectores

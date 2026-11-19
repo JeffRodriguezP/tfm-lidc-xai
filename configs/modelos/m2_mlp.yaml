@@ -1,0 +1,18 @@
+# M2 · perceptrón multicapa con el vector de ocho atributos (es la rama tabular que reutilizará M6) (Tabla 21): cota de lo que las ocho valoraciones del radiólogo explican por sí solas (escenario A). No es un modelo de imagen.
+# Entradas: seis atributos ordinales (mediana entre lectores, estandarizados) y dos nominales (moda entre lectores, one-hot);
+# la malignidad NUNCA es entrada. Estandarización, imputación (con indicador) y categorías se ajustan solo con el entrenamiento de cada pliegue.
+hereda: ../base.yaml
+
+modelo:
+  id: M2
+  nombre: m2_mlp
+  familia: tabular
+  imputar: true
+  variables:
+    numericas: [subtlety_mediana, sphericity_mediana, margin_mediana, lobulation_mediana, spiculation_mediana, texture_mediana]
+    categoricas: [internalStructure_moda, calcification_moda]
+  estimador: mlp
+  parametros:
+    hidden_layer_sizes: [32, 16]   # dos capas densas de tamaño reducido (apartado 3.3.6)
+    alpha: 0.001                   # regularización L2
+    max_iter: 2000

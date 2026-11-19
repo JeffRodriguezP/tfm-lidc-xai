@@ -88,7 +88,7 @@ def ejecutar(ruta_cfg: str, n_control: int = 0) -> dict:
     part = dp.generar_o_cargar(nod, cfg, raiz)
     d = part.merge(nod, on=["nodule_id", "patient_id"], validate="one_to_one")
     cols = tabular.columnas(m)
-    faltan = [c for c in cols if c not in d or d[c].isna().any()]
+    faltan = [c for c in cols if c not in d or (d[c].isna().any() and not m.get("imputar", False))]
     if faltan:
         raise ValueError(f"Faltan valores en {faltan}. Si es 'fabricante', indica datos.metadata_csv en configs/local.yaml")
     y = d.etiqueta.values

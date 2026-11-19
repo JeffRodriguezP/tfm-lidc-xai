@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -22,14 +24,24 @@ def construir(cfg_modelo: dict, semilla: int) -> Pipeline:
         clf = LogisticRegression(random_state=semilla, **par)
     elif est == "bosque":
         clf = RandomForestClassifier(random_state=semilla, n_jobs=-1, **par)
+    elif est == "mlp":
+        if "hidden_layer_sizes" in par:
+            par["hidden_layer_sizes"] = tuple(par["hidden_layer_sizes"])
+        clf = MLPClassifier(random_state=semilla, **par)
     else:
         raise ValueError(f"Estimador no soportado: {est}")
     v = cfg_modelo["variables"]
     if isinstance(v, list):
         return Pipeline([("escalado", StandardScaler()), ("clf", clf)])
+    codificador = OneHotEncoder(handle_unknown="ignore", sparse_output=False)   # categorías nuevas → ceros
+    if cfg_modelo.get("imputar", False):
+        # Imputación con estadísticos del entrenamiento (mediana / moda) + indicador de imputación (3.3.5.5)
+        num = Pipeline([("imputar", SimpleImputer(strategy="median", add_indicator=True)), ("escalado", StandardScaler())])
+        cat = Pipeline([("imputar", SimpleImputer(strategy="most_frequent", add_indicator=True)), ("codificar", codificador)])
+    else:
+        num, cat = StandardScaler(), codificador
     pre = ColumnTransformer([
-        ("num", StandardScaler(), v.get("numericas", [])),
-        # Categorías nunca vistas en el entrenamiento → vector de ceros (no rompe ni filtra información)
-        ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), v.get("categoricas", [])),
+        ("num", num, v.get("numericas", [])),
+        ("cat", cat, v.get("categoricas", [])),
     ], verbose_feature_names_out=False)
     return Pipeline([("preprocesado", pre), ("clf", clf)])
