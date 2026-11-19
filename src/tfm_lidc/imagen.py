@@ -44,7 +44,8 @@ from .models import cnn
 
 ENTRENO_DEF = dict(epocas=60, paciencia=12, tam_lote=64, tasa_aprendizaje=1e-3, decaimiento_pesos=1e-4,
                    ponderar_clase=True, ponderar_por_cortes=True, normalizar=True, agregacion="media")
-AUMENTO_DEF = dict(giros=True, rotacion_grados=15.0, desplazamiento_px=8.0, intensidad=0.1)
+AUMENTO_DEF = dict(giros=True, rotacion_grados=15.0, desplazamiento_px=8.0, intensidad=0.1,
+                   desenfoque=0.0, ruido=0.0)                       # desenfoque y ruido: desactivados por defecto
 
 
 # --------------------------------------------------------------------------------------------------------
@@ -98,6 +99,20 @@ def aumentar(x: torch.Tensor, a: dict, g: torch.Generator) -> torch.Tensor:
     i = float(a.get("intensidad", 0))
     if i:
         x = x * (1 + (u(n, 1, 1, 1) * 2 - 1) * i) + (u(n, 1, 1, 1) * 2 - 1) * i / 2
+    p_blur = float(a.get("desenfoque", 0))
+    if p_blur:                                                      # desenfoque gaussiano (σ 0,5–1,5 px) con prob. p
+        sigma = 0.5 + float(torch.rand(1, generator=g))
+        r = int(math.ceil(3 * sigma))
+        k = torch.exp(-torch.arange(-r, r + 1, dtype=torch.float32) ** 2 / (2 * sigma ** 2))
+        k = (k / k.sum()).to(dev)
+        c = x.shape[1]
+        xb = F.pad(x, (r, r, r, r), mode="replicate")
+        xb = F.conv2d(xb, k.view(1, 1, 1, -1).repeat(c, 1, 1, 1), groups=c)
+        xb = F.conv2d(xb, k.view(1, 1, -1, 1).repeat(c, 1, 1, 1), groups=c)
+        x = torch.where(u(n, 1, 1, 1) < p_blur, xb, x)
+    ruido = float(a.get("ruido", 0))
+    if ruido:                                                       # ruido gaussiano, σ ~ U(0, ruido) por imagen
+        x = x + torch.randn(x.shape, generator=g).to(dev) * (u(n, 1, 1, 1) * ruido)
     return x.clamp(0, 1)
 
 

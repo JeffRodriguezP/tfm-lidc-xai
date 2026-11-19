@@ -104,9 +104,10 @@ def test_cnn_salida_y_mapa_de_16x16(canales):
     assert cnn.n_parametros(m) < 2_000_000
 
 
-def test_aumento_conserva_forma_rango_y_es_reproducible():
-    x = torch.rand(8, 1, 32, 32)
-    a = dict(giros=True, rotacion_grados=15, desplazamiento_px=4, intensidad=0.1)
+@pytest.mark.parametrize("extra", [{}, dict(ruido=0.05, desenfoque=0.5)])
+def test_aumento_conserva_forma_rango_y_es_reproducible(extra):
+    x = torch.rand(8, 3, 32, 32)
+    a = dict(giros=True, rotacion_grados=15, desplazamiento_px=4, intensidad=0.1, **extra)
     x1 = aumentar(x, a, torch.Generator().manual_seed(0))
     x2 = aumentar(x, a, torch.Generator().manual_seed(0))
     assert x1.shape == x.shape and torch.equal(x1, x2) and x1.min() >= 0 and x1.max() <= 1
@@ -118,7 +119,8 @@ def test_configuraciones_m3(ruta):
     m = cfg["modelo"]
     assert m["id"] == "M3" and m["familia"] == "imagen"
     assert m["entrada"]["politica"] in {"S1", "S2", "S3"}
-    assert dr.parametros(cfg)["tam_px"] == 128
+    assert dr.parametros(cfg)["tam_px"] == (96 if ruta.stem == "m3_cnn_fov48" else 128)
+    assert m["nombre"] == ruta.stem                           # cada variante escribe en su propia carpeta
 
 
 # --- 4 · no fuga -------------------------------------------------------------------------------------------
@@ -173,3 +175,16 @@ def test_entrena_y_separa_un_problema_facil():
     p = agregacion.por_nodulo(ids[te], r["prob_cortes_prueba"])
     from sklearn.metrics import roc_auc_score
     assert roc_auc_score(pd.Series(y[te], index=ids[te]).groupby(level=0).first().loc[p.index], p) > 0.9
+
+
+def test_desenfoque_suaviza_y_ruido_añade_varianza():
+    g = lambda: torch.Generator().manual_seed(0)                # noqa: E731
+    x = torch.zeros(4, 1, 32, 32)
+    x[:, :, :, 16:] = 1.0                                     # borde vertical nítido
+    xb = aumentar(x, dict(desenfoque=1.0), g())
+    assert 0 < xb[0, 0, 16, 15] < 1                           # el borde se suaviza
+    xr = aumentar(torch.full((4, 1, 32, 32), 0.5), dict(ruido=0.1), g())
+    assert xr.std() > 0
+    # sin las claves nuevas el aumento es idéntico al de la ejecución base (no consume aleatoriedad extra)
+    base = dict(giros=True, rotacion_grados=15, desplazamiento_px=4, intensidad=0.1)
+    assert torch.equal(aumentar(x, base, g()), aumentar(x, dict(base, ruido=0, desenfoque=0), g()))

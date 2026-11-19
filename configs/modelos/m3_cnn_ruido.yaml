@@ -1,0 +1,9 @@
+# M3 · variante con aumento de ruido y desenfoque (experimento de ajuste; se elige por AUC de VALIDACIÓN).
+# Motivo: los falsos positivos más seguros de la ejecución base son exploraciones ruidosas/estriadas.
+hereda: m3_cnn.yaml
+
+modelo:
+  nombre: m3_cnn_ruido
+  aumento:
+    ruido: 0.03               # σ máx. del ruido gaussiano en unidades de la ventana (0,03 × 1.400 HU ≈ 42 HU)
+    desenfoque: 0.3           # probabilidad de desenfoque gaussiano (σ 0,5–1,5 px)

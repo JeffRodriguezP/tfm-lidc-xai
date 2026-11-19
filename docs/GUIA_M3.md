@@ -130,6 +130,24 @@ Antes de lanzar una ejecución completa: `pytest -q` (las pruebas de no fuga deb
 rápida con `--pliegues 0 --semillas 42 --epocas 3`. Para comparar ajustes sin la terminal, usa la celda
 «Laboratorio» del cuaderno 06 (un pliegue, pocas épocas; no son cifras del TFM).
 
+## Experimentos de ajuste (semilla 42, 5 pliegues)
+
+| Variante | YAML | Cambio frente a `m3_cnn` |
+|---|---|---|
+| 2,5D | `m3_cnn_25d.yaml` | Política S3: cortes k−1, k, k+1 como 3 canales |
+| Regularización | `m3_cnn_reg.yaml` | Abandono 0,5; decaimiento 1e-3; lr 3e-4; paciencia 15 |
+| Ruido y desenfoque | `m3_cnn_ruido.yaml` | `aumento.ruido: 0.03`, `aumento.desenfoque: 0.3` |
+| Campo de 48 mm | `m3_cnn_fov48.yaml` | `recortes.fov_mm: 48` (96 × 96 px a 0,5 mm), desplazamiento 6 px |
+
+Se ejecutan con `--semillas 42` y se comparan por **AUC medio de validación** (no de prueba):
+
+```bash
+python scripts/comparar_variantes_m3.py                  # ordena por validación
+python scripts/comparar_variantes_m3.py --mostrar-prueba # solo al final, para la variante elegida
+```
+
+La ganadora se repite con las semillas 42–44 antes de sustituir a la configuración base.
+
 ## Protocolo (resumen)
 
 - Misma partición versionada por paciente que M0–M2. Entrenamiento con 'entrenamiento'; parada temprana (AUC de

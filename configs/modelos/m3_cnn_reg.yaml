@@ -1,0 +1,12 @@
+# M3 · variante de regularización más fuerte (experimento de ajuste; se elige por AUC de VALIDACIÓN, no de prueba).
+# Motivo: sobreajuste temprano y gran variación entre semillas en la ejecución base (0,868–0,917).
+hereda: m3_cnn.yaml
+
+modelo:
+  nombre: m3_cnn_reg
+  parametros:
+    abandono: 0.5             # base: 0,3
+  entrenamiento:
+    tasa_aprendizaje: 0.0003  # base: 0,001
+    decaimiento_pesos: 0.001  # base: 0,0001
+    paciencia: 15             # base: 12 (aprende más despacio)

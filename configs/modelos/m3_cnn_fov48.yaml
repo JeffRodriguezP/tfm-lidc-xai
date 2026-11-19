@@ -1,0 +1,12 @@
+# M3 · variante con campo de visión de 48 mm (96 × 96 px a 0,5 mm; experimento de ajuste, se elige por AUC de VALIDACIÓN).
+# Motivo: con 64 mm un nódulo de 5–7 mm ocupa 10–14 px; se reduce el contexto sin cambiar el espaciado, de modo que el
+# tamaño absoluto del nódulo sigue siendo comparable. Extrae recortes nuevos (carpeta propia) la primera vez (~6 min).
+hereda: m3_cnn.yaml
+
+recortes:
+  fov_mm: 48
+
+modelo:
+  nombre: m3_cnn_fov48
+  aumento:
+    desplazamiento_px: 6      # base: 8 px; se reduce en proporción al recorte (3 mm)
