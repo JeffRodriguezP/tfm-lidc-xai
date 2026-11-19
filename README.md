@@ -18,7 +18,7 @@ Código del Trabajo de Fin de Máster (UNIR) sobre el conjunto público [LIDC-ID
 | **M1** · línea base de metadatos | Regresión logística con los metadatos de adquisición (sin diámetro) y control con etiquetas permutadas | Implementado |
 | **M2** · atributos semánticos | Logística, bosque aleatorio y perceptrón con las ocho valoraciones del radiólogo, y variantes con diámetro y volumen | Implementado (pendiente de integrar en `main`) |
 | Extractor de recortes | DICOM → recortes de 64 mm a 0,5 mm/px (128 × 128), ventana fija, máscara de consenso; políticas S1/S2/S3 | Implementado |
-| **M3** · CNN compacta | Red convolucional desde cero con recortes 2D (S2) o 2,5D (S3); ver [`docs/GUIA_M3.md`](docs/GUIA_M3.md) | Implementado y ejecutado (5 pliegues × 3 semillas) |
+| **M3** · CNN compacta | Red convolucional desde cero con recortes 2D (S2) de 48 mm (96 × 96 px); 64 mm como sensibilidad; ver [`docs/GUIA_M3.md`](docs/GUIA_M3.md) | Implementado y ejecutado (5 pliegues × 3 semillas) |
 | M4–M7 (ResNet, EfficientNet, fusión, multitarea) | Modelos de imagen, fusión con atributos y multitarea | Diseñado |
 | Evaluación de la explicabilidad | Grad-CAM++ y LayerCAM frente a máscaras de consenso, con referencias nulas | Diseñado |
 | Aplicación de consulta | Interfaz para consultar resultados | Diseñado |
@@ -33,8 +33,9 @@ Validación cruzada de 5 pliegues agrupados por paciente; intervalos del 95 % po
 |---|---|---|
 | M0 | Diámetro del nódulo | 0,936 [0,917; 0,952] |
 | M1 | Metadatos de adquisición | 0,541 [0,496; 0,588] (p = 0,047 por permutación) |
+| M3 | CNN desde cero, recortes de 48 mm (media ± DT de 3 semillas) | 0,921 ± 0,002 (IC 95 % por semilla ≈ [0,90; 0,94]) |
 
-M1 sirve como detector de atajos: un AUC próximo a 0,5 indica que la etiqueta no se predice por cómo se adquirió la TC. Las cifras de M2 se publicarán cuando se ejecuten en el entorno fijado de este repositorio.
+M1 sirve como detector de atajos: un AUC próximo a 0,5 indica que la etiqueta no se predice por cómo se adquirió la TC. Las cifras de M2 están en su rama (`feat/linea-base-m2`, cuaderno 03). M3 queda a la altura de M0 sin superarlo (ΔAUC ≈ −0,015, IC que contienen el 0).
 
 ## Instalación
 
@@ -84,8 +85,8 @@ python -m tfm_lidc.lineas_base --config configs/modelos/m2_mlp.yaml
 python scripts/contar_cortes.py --verificar
 
 # Modelos de imagen: extraer recortes una vez y entrenar M3
-python -m tfm_lidc.data.recortes --config configs/base.yaml --procesos 6
-python -m tfm_lidc.imagen --config configs/modelos/m3_cnn.yaml
+python -m tfm_lidc.data.recortes --config configs/modelos/m3_cnn_fov48.yaml --procesos 6
+python -m tfm_lidc.imagen --config configs/modelos/m3_cnn_fov48.yaml
 ```
 
 Cada ejecución crea `resultados/<modelo>__<regla>__s<semilla>__<commit>/` con `registro.json` (configuración, huella de la partición, versiones, métricas) y las predicciones fuera de muestra. Esa carpeta no se sube al repositorio.
