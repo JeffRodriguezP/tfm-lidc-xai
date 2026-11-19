@@ -71,6 +71,65 @@ pliegue y por método de agregación, y la media ± desviación típica del AUC 
 tiene la predicción fuera de muestra de cada nódulo, con las mismas columnas que M0–M2 para las comparaciones pareadas
 (H1: mejor de M3–M5 frente a M0).
 
+## Resultados de la ejecución completa (R1, 869 nódulos, 5 pliegues × 3 semillas)
+
+Ejecución `resultados/m3_cnn__R1__4a6c74d26875` (commit `afde3e6`, MPS, 16,7 h de reloj con pausas por suspensión).
+AUC de prueba fuera de pliegue por nódulo, IC 95 % por bootstrap de pacientes; ΔAUC pareado frente a M0 (0,936):
+
+| Semilla | AUC [IC 95 %] | Exactitud | Sensibilidad | Especificidad | Brier | ΔAUC vs M0 [IC 95 %] |
+|---|---|---|---|---|---|---|
+| 42 | 0,889 [0,867; 0,912] | 0,795 | 0,853 | 0,741 | 0,134 | −0,046 [−0,069; −0,022] |
+| 43 | 0,868 [0,836; 0,897] | 0,817 | 0,839 | 0,797 | 0,145 | −0,068 [−0,097; −0,040] |
+| 44 | 0,917 [0,892; 0,940] | 0,835 | 0,815 | 0,855 | 0,111 | −0,019 [−0,043; +0,005] |
+| **Media ± DT** | **0,891 ± 0,025** | | | | | |
+
+M3 no supera a M0 en ninguna semilla (en dos, el IC del ΔAUC excluye el 0 a favor de M0). El cuaderno
+`notebooks/06_m3_cnn.ipynb` reproduce la tabla, la curva ROC y la galería de errores. El promedio de las
+probabilidades de las 3 semillas (ensamble, 0,921) es otro modelo y no es la cifra que pide la memoria.
+
+## Dónde cambiar cada cosa
+
+Regla general: **no edites `m3_cnn.yaml` para experimentar**. Crea un YAML nuevo que herede de él y cambie solo lo
+necesario (así la ejecución oficial sigue reproducible y cada experimento tiene su carpeta de resultados):
+
+```yaml
+# configs/modelos/m3_cnn_lr3e4.yaml
+hereda: m3_cnn.yaml
+modelo:
+  nombre: m3_cnn_lr3e4          # obligatorio: da nombre a la carpeta de resultados
+  entrenamiento:
+    tasa_aprendizaje: 0.0003
+```
+
+```bash
+python -m tfm_lidc.imagen --config configs/modelos/m3_cnn_lr3e4.yaml --semillas 42   # prueba con una semilla
+```
+
+| Quiero cambiar… | Dónde | Clave / qué tocar | ¿Hay que volver a extraer recortes? |
+|---|---|---|---|
+| Tasa de aprendizaje, decaimiento, lote | YAML del modelo | `entrenamiento.tasa_aprendizaje`, `decaimiento_pesos`, `tam_lote` | No |
+| Épocas máximas, paciencia | YAML del modelo | `entrenamiento.epocas`, `paciencia` | No |
+| Número de semillas | YAML (`entrenamiento.semillas`) o `--semillas` | Lista de enteros | No |
+| Pesos de la pérdida | YAML del modelo | `ponderar_por_cortes`, `ponderar_clase` | No |
+| Agregación de cortes en nódulo | YAML del modelo | `entrenamiento.agregacion`: `media`, `maximo`, `media_recortada` | No |
+| Aumento de datos | YAML del modelo | `aumento.giros`, `rotacion_grados`, `desplazamiento_px`, `intensidad` | No |
+| Anchura / profundidad de la red, abandono | YAML del modelo | `parametros.anchos` (p. ej. `[16, 32, 64, 128]`; un elemento más = un bloque más), `abandono` | No |
+| Política de cortes (S1 / S2 / S3) | YAML del modelo | `entrada.politica` | No |
+| Área mínima de consenso por corte | `base.yaml` o YAML | `datos.area_minima_corte_mm2` | No (se filtra al cargar) |
+| Tamaño del recorte (128 → 224) | `base.yaml` | `recortes.mm_por_pixel: 0.2857` (o `fov_mm`) | **Sí** (carpeta nueva automática) |
+| Ventana de intensidades | `base.yaml` | `recortes.ventana_hu` | **Sí** |
+| Nivel de consenso de la máscara | `base.yaml` | `datos.nivel_consenso` | **Sí** (y cambia los cortes S2: revisar `contar_cortes.py`) |
+| Regla de etiquetado (R2, R3) | `base.yaml` o YAML | `datos.regla` | Solo los nódulos nuevos |
+| Sin el lanzamiento inicial | YAML | `datos.excluir_publicacion_inicial: true` | No |
+| Otra arquitectura (otra capa, residual…) | `src/tfm_lidc/models/cnn.py` | Nueva clase + rama en `construir()` con `arquitectura: <nombre>` | No |
+| Optimizador, planificador, pérdida focal | `src/tfm_lidc/imagen.py` | `entrenar_pliegue` (líneas `torch.optim…` y `binary_cross_entropy_with_logits`) | No |
+| Criterio de umbral | `src/tfm_lidc/imagen.py` | `metricas.umbral_youden(...)` en `entrenar_pliegue` | No |
+| Métricas | `src/tfm_lidc/evaluation/metricas.py` | `puntuales()` (afecta a todos los modelos) | No |
+
+Antes de lanzar una ejecución completa: `pytest -q` (las pruebas de no fuga deben seguir pasando) y una prueba
+rápida con `--pliegues 0 --semillas 42 --epocas 3`. Para comparar ajustes sin la terminal, usa la celda
+«Laboratorio» del cuaderno 06 (un pliegue, pocas épocas; no son cifras del TFM).
+
 ## Protocolo (resumen)
 
 - Misma partición versionada por paciente que M0–M2. Entrenamiento con 'entrenamiento'; parada temprana (AUC de
