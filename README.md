@@ -18,7 +18,7 @@ Código del Trabajo de Fin de Máster (UNIR) sobre el conjunto público [LIDC-ID
 | **M1** · línea base de metadatos | Regresión logística con los metadatos de adquisición (sin diámetro) y control con etiquetas permutadas | Implementado |
 | **M2** · atributos semánticos | Logística, bosque aleatorio y perceptrón con las ocho valoraciones del radiólogo, y variantes con diámetro y volumen | Implementado (pendiente de integrar en `main`) |
 | Extractor de recortes | DICOM → recortes de 64 mm a 0,5 mm/px (128 × 128), ventana fija, máscara de consenso; políticas S1/S2/S3 | Implementado |
-| **M3** · CNN compacta | Red convolucional desde cero con recortes 2D (S2) o 2,5D (S3); ver [`docs/GUIA_M3.md`](docs/GUIA_M3.md) | Implementado (pendiente de ejecución completa) |
+| **M3** · CNN compacta | Red convolucional desde cero con recortes 2D (S2) o 2,5D (S3); ver [`docs/GUIA_M3.md`](docs/GUIA_M3.md) | Implementado y ejecutado (5 pliegues × 3 semillas) |
 | M4–M7 (ResNet, EfficientNet, fusión, multitarea) | Modelos de imagen, fusión con atributos y multitarea | Diseñado |
 | Evaluación de la explicabilidad | Grad-CAM++ y LayerCAM frente a máscaras de consenso, con referencias nulas | Diseñado |
 | Aplicación de consulta | Interfaz para consultar resultados | Diseñado |
@@ -58,7 +58,7 @@ Los datos **no** están en el repositorio y no deben subirse (el `.gitignore` lo
 
 - **M0 y M2** solo necesitan la base de anotaciones que trae pylidc.
 - **M1** necesita además el `metadata.csv` de la descarga de LIDC-IDRI (fabricante del equipo).
-- Los modelos de imagen (M3 en adelante, aún no implementados) necesitarán los recortes generados a partir de los DICOM.
+- Los modelos de imagen (M3 en adelante) necesitan además los DICOM (`datos.dicom_root`): los recortes se generan una vez con `python -m tfm_lidc.data.recortes --config configs/base.yaml` (unos 6 min).
 
 Cada persona indica sus rutas en `configs/local.yaml`, que no se versiona:
 

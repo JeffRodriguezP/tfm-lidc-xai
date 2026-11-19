@@ -13,11 +13,6 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 .DS_Store
-
+# Archivos locales de trabajo
 Claude outputs/
 Untitled*.ipynb
-.ipynb_checkpoints/
-
-Claude outputs/
-Untitled*.ipynb
-.ipynb_checkpoints/
